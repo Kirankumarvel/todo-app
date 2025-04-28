@@ -5,10 +5,13 @@ import os
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Required for flash messages
 
+# Constants
+DATABASE_FILE = 'tasks.db'
+ADD_TASK_TEMPLATE = 'add_task.html'
 # Database setup
 def init_db():
-    if not os.path.exists('tasks.db'):
-        with sqlite3.connect('tasks.db') as conn:
+    if not os.path.exists(DATABASE_FILE):
+        with sqlite3.connect(DATABASE_FILE) as conn:
             c = conn.cursor()
             c.execute('''
                 CREATE TABLE IF NOT EXISTS tasks (
@@ -21,9 +24,6 @@ def init_db():
                 )
             ''')
             conn.commit()
-
-# Initialize the database on app startup
-init_db()
 
 # Helper function to get a database connection
 def get_db_connection():
@@ -47,12 +47,15 @@ def index():
 def add_task():
     if request.method == 'POST':
         task_name = request.form.get('task_name', '').strip()
-        description = request.form.get('description', '').strip()
-
         if not task_name:
-            flash("Task name is required", "error")
+            return render_template(ADD_TASK_TEMPLATE)
             return render_template('add_task.html')
-
+            flash("Invalid task name", "error")
+            return render_template('add_task.html')
+            flash("Invalid task name", "error")
+            return render_template('add_task.html')
+    
+        description = request.form.get('description', '').strip()
         try:
             with get_db_connection() as conn:
                 c = conn.cursor()
@@ -62,6 +65,7 @@ def add_task():
             return redirect('/')
         except Exception as e:
             flash(f"Error adding task: {e}", "error")
+            return render_template('add_task.html')
             return render_template('add_task.html')
 
     return render_template('add_task.html')
